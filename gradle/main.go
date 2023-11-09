@@ -36,9 +36,7 @@ func (g *Gradle) FromVersion(version string) *Gradle {
 	g.Container = dag.Container().
 		From(fmt.Sprintf("gradle:%s", g.Version)).
 		WithWorkdir("/app").
-		WithMountedCache("/root/.gradle/caches", dag.CacheVolume("gradle-caches")).
-		WithEntrypoint([]string{"gradle"})
-
+		WithMountedCache("/root/.gradle/caches", dag.CacheVolume("gradle-caches"))
 	return g
 }
 
@@ -49,9 +47,7 @@ func (g *Gradle) FromImage(image string) *Gradle {
 	g.Container = dag.Container().
 		From(image).
 		WithWorkdir("/app").
-		WithMountedCache("/root/.gradle/caches", dag.CacheVolume("gradle-caches")).
-		WithEntrypoint([]string{"gradle"})
-
+		WithMountedCache("/root/.gradle/caches", dag.CacheVolume("gradle-caches"))
 	return g
 }
 
@@ -59,22 +55,31 @@ func (g *Gradle) FromImage(image string) *Gradle {
 func (g *Gradle) Build() *Container {
 	g.checkContainer()
 
-	return g.Container.WithExec([]string{"clean", "build", "--no-daemon"})
+	return g.Container.WithExec(g.command([]string{"clean", "build", "--no-daemon"}))
 }
 
 // Test runs a clean test.
 func (g *Gradle) Test() *Container {
 	g.checkContainer()
 
-	return g.Container.WithExec([]string{"clean", "test", "--no-daemon"})
+	return g.Container.WithExec(g.command([]string{"clean", "test", "--no-daemon"}))
 }
 
 // Task allows you to run any custom gradle task you would like.
 func (g *Gradle) Task(task string, args ...string) *Container {
 	g.checkContainer()
 
-	cmd := append([]string{task}, args...)
-	return g.Container.WithExec(cmd)
+	return g.Container.WithExec(g.command(append([]string{task}, args...)))
+}
+
+// command returns the command to be executed in the container with either
+// gradlew or gradle.
+func (g *Gradle) command(cmd []string) []string {
+	if g.Wrapper {
+		return append([]string{"./gradlew"}, cmd...)
+	}
+
+	return append([]string{"gradle"}, cmd...)
 }
 
 // checkContainer makes sure that gradle's Container is properly
