@@ -8,16 +8,15 @@ const DefaultGradleVersion = "latest"
 
 type Gradle struct {
 	Version   string
-	Container *Container
+	Image     string
+	Directory *Directory
 	Wrapper   bool
 }
 
 // WithDirectory mounts the directory of the application that will be potentially
 // built.
 func (g *Gradle) WithDirectory(src *Directory) *Gradle {
-	g.checkContainer()
-
-	g.Container = g.Container.WithMountedDirectory("/app", src)
+	g.Directory = src
 	return g
 }
 
@@ -33,10 +32,6 @@ func (g *Gradle) WithWrapper() *Gradle {
 // version will be used specified by the `DefaultGradleVersion` constant.
 func (g *Gradle) FromVersion(version string) *Gradle {
 	g.Version = version
-	g.Container = dag.Container().
-		From(fmt.Sprintf("gradle:%s", g.Version)).
-		WithWorkdir("/app").
-		WithMountedCache("/root/.gradle/caches", dag.CacheVolume("gradle-caches"))
 	return g
 }
 
@@ -44,55 +39,48 @@ func (g *Gradle) FromVersion(version string) *Gradle {
 // Keep in mind that if `WithWrapper` is not specified this image must have
 // gradle installed.
 func (g *Gradle) FromImage(image string) *Gradle {
-	g.Container = dag.Container().
-		From(image).
-		WithWorkdir("/app").
-		WithMountedCache("/root/.gradle/caches", dag.CacheVolume("gradle-caches"))
+	g.Image = image
 	return g
 }
 
 // Build runs a clean build.
 func (g *Gradle) Build() *Container {
-	g.checkContainer()
-
-	return g.Container.WithExec(g.command([]string{"clean", "build", "--no-daemon"}))
+	return g.buildContainer().WithExec([]string{"clean", "build", "--no-daemon"})
 }
 
 // Test runs a clean test.
 func (g *Gradle) Test() *Container {
-	g.checkContainer()
-
-	return g.Container.WithExec(g.command([]string{"clean", "test", "--no-daemon"}))
+	return g.buildContainer().WithExec([]string{"clean", "test", "--no-daemon"})
 }
 
 // Task allows you to run any custom gradle task you would like.
 func (g *Gradle) Task(task string, args ...string) *Container {
-	g.checkContainer()
-
-	return g.Container.WithExec(g.command(append([]string{task}, args...)))
+	return g.buildContainer().WithExec(append([]string{task}, args...))
 }
 
-// command returns the command to be executed in the container with either
-// gradlew or gradle.
-func (g *Gradle) command(cmd []string) []string {
+// buildContainer builds a gradle container with the specified version or
+// image and the directory that was mounted.
+func (g *Gradle) buildContainer() *Container {
+	image := g.Image
+	if image == "" {
+		version := g.Version
+		if version == "" {
+			version = DefaultGradleVersion
+		}
+		image = fmt.Sprintf("gradle:%s", version)
+	}
+
+	container := dag.Container().
+		From(image).
+		WithWorkdir("/app").
+		WithMountedCache("/root/.gradle/caches", dag.CacheVolume("gradle-caches"))
+	if g.Directory != nil {
+		container = container.WithMountedDirectory("/app", g.Directory)
+	}
+
 	if g.Wrapper {
-		return append([]string{"./gradlew"}, cmd...)
+		return container.WithEntrypoint([]string{"./gradlew"})
 	}
 
-	return append([]string{"gradle"}, cmd...)
-}
-
-// checkContainer makes sure that gradle's Container is properly
-// initialized. If not, it will initialize it with the default
-// gradle version
-func (g *Gradle) checkContainer() {
-	if g.Container != nil {
-		return
-	}
-
-	if g.Version == "" {
-		g.FromVersion(DefaultGradleVersion)
-	} else {
-		g.FromVersion(g.Version)
-	}
+	return container.WithEntrypoint([]string{"gradle"})
 }
