@@ -79,6 +79,7 @@ func (g *Gradle) buildContainer() *Container {
 	}
 
 	if g.Wrapper {
+		container = container.WithMountedCache("/root/.gradle/wrapper", dag.CacheVolume("gradle-wrapper"))
 		return container.WithEntrypoint([]string{"./gradlew"})
 	}
 
