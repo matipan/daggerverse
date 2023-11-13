@@ -58,6 +58,11 @@ func (m *Pulumi) Destroy(ctx context.Context, src *Directory, stack string) (str
 	return m.commandOutput(ctx, src, fmt.Sprintf("pulumi destroy --stack %s --non-interactive --yes", stack))
 }
 
+// Run runs the specified pulumi command. For example: preview --diff.
+func (m *Pulumi) Run(ctx context.Context, src *Directory, command string) (string, error) {
+	return m.commandOutput(ctx, src, fmt.Sprintf("pulumi %s", command))
+}
+
 // commandOutput runs the given command in the pulumi container and returns its output.
 func (m *Pulumi) commandOutput(ctx context.Context, src *Directory, command string) (string, error) {
 	ct, err := m.authenticatedContainer(src)
