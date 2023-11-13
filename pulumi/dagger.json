@@ -1,0 +1,4 @@
+{
+  "name": "pulumi",
+  "sdk": "go"
+}
