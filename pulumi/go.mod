@@ -7,6 +7,7 @@ require (
 	github.com/Khan/genqlient v0.6.0
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	golang.org/x/sync v0.4.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
