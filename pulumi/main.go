@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	"gopkg.in/yaml.v3"
 )
 
 type Pulumi struct {
@@ -65,7 +67,7 @@ func (m *Pulumi) Run(ctx context.Context, src *Directory, command string) (strin
 
 // commandOutput runs the given command in the pulumi container and returns its output.
 func (m *Pulumi) commandOutput(ctx context.Context, src *Directory, command string) (string, error) {
-	ct, err := m.authenticatedContainer(src)
+	ct, err := m.authenticatedContainer(ctx, src)
 	if err != nil {
 		return "", err
 	}
@@ -78,12 +80,16 @@ func (m *Pulumi) commandOutput(ctx context.Context, src *Directory, command stri
 // authenticatedContainer returns a pulumi container with the required credentials.
 // Users have to set credentials for their cloud provider by using the `With<Provider>Credentials`
 // function.
-func (m *Pulumi) authenticatedContainer(src *Directory) (*Container, error) {
+func (m *Pulumi) authenticatedContainer(ctx context.Context, src *Directory) (*Container, error) {
 	if m.PulumiToken == nil {
 		return nil, errors.New("pulumi token is required. Use `with-pulumi-token` to set it")
 	}
 
-	ct := container(src, m.PulumiToken, m.Version)
+	ct, err := container(ctx, src, m.PulumiToken, m.Version)
+	if err != nil {
+		return nil, err
+	}
+
 	switch {
 	case m.AwsAccessKey != nil && m.AwsSecretKey != nil:
 		ct = ct.WithSecretVariable("AWS_ACCESS_KEY_ID", m.AwsAccessKey).
@@ -96,16 +102,47 @@ func (m *Pulumi) authenticatedContainer(src *Directory) (*Container, error) {
 }
 
 // container obtains a base container with pulumi's CLI installed.
-func container(src *Directory, pulumiToken *Secret, version string) *Container {
+func container(ctx context.Context, src *Directory, pulumiToken *Secret, version string) (*Container, error) {
+	f := src.File("Pulumi.yaml")
+	if f == nil {
+		return nil, errors.New("Pulumi.yaml file not found")
+	}
+
+	b, err := f.Contents(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	project := struct {
+		Runtime string `yaml:"runtime"`
+	}{}
+	if err := yaml.Unmarshal([]byte(b), &project); err != nil {
+		return nil, err
+	}
+
 	if version == "" {
 		version = "latest"
 	}
+
+	depCmd := ""
+	switch project.Runtime {
+	case "go":
+		depCmd = "go mod tidy"
+	case "nodejs":
+		depCmd = "npm install"
+	case "python":
+		depCmd = "pip install -r requirements.txt"
+	case "dotnet":
+	default:
+		return nil, fmt.Errorf("unsupported pulumi runtime: %s", project.Runtime)
+	}
+
 	return dag.
 		Container().
-		From(fmt.Sprintf("pulumi/pulumi:%s", version)).
+		From(fmt.Sprintf("pulumi/pulumi-%s:%s", project.Runtime, version)).
 		WithSecretVariable("PULUMI_ACCESS_TOKEN", pulumiToken).
 		WithMountedDirectory("/infra", src).
 		WithWorkdir("/infra").
 		WithEntrypoint([]string{"/bin/bash"}).
-		WithExec([]string{"-c", "go mod tidy"})
+		WithExec([]string{"-c", depCmd}), nil
 }
