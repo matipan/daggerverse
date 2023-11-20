@@ -43,6 +43,13 @@ func (g *Gradle) FromImage(image string) *Gradle {
 	return g
 }
 
+// Container returns a container with gradle, caching and directories mounted
+// and ready to be used. You can use this if for any reason the available functions
+// are not enough.
+func (g *Gradle) Container() *Container {
+	return g.buildContainer()
+}
+
 // Build runs a clean build.
 func (g *Gradle) Build() *Container {
 	return g.buildContainer().WithExec([]string{"clean", "build", "--no-daemon"})
