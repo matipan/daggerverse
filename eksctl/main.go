@@ -32,15 +32,15 @@ func (m *Eksctl) Exec(ctx context.Context, command []string) (string, error) {
 	return m.Container.WithExec(command).Stdout(ctx)
 }
 
-// CreateCluster calls `eksctl create` with the cluster config. Additional
+// Create calls `eksctl create` with the cluster config. Additional
 // flags can be provided in `exec` form.
-func (m *Eksctl) CreateCluster(ctx context.Context, flags ...string) (string, error) {
+func (m *Eksctl) Create(ctx context.Context, flags ...string) (string, error) {
 	return m.Exec(ctx, append([]string{"create", "cluster", "-f", "/cluster.yaml"}, flags...))
 }
 
 // DeleteCluster calls `eksctl delete` on the cluster config. Additional
 // flags can be provided in `exec` form.
-func (m *Eksctl) DeleteCluster(ctx context.Context, flags ...string) (string, error) {
+func (m *Eksctl) Delete(ctx context.Context, flags ...string) (string, error) {
 	return m.Exec(ctx, append([]string{"delete", "cluster", "-f", "/cluster.yaml"}, flags...))
 }
 
