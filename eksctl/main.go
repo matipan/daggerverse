@@ -34,14 +34,14 @@ func (m *Eksctl) Exec(ctx context.Context, command []string) (string, error) {
 
 // Create calls `eksctl create` with the cluster config. Additional
 // flags can be provided in `exec` form.
-func (m *Eksctl) Create(ctx context.Context, flags ...string) (string, error) {
-	return m.Exec(ctx, append([]string{"create", "cluster", "-f", "/cluster.yaml"}, flags...))
+func (m *Eksctl) Create(ctx context.Context, flags Optional[[]string]) (string, error) {
+	return m.Exec(ctx, append([]string{"create", "cluster", "-f", "/cluster.yaml"}, flags.GetOr([]string{})...))
 }
 
 // DeleteCluster calls `eksctl delete` on the cluster config. Additional
 // flags can be provided in `exec` form.
-func (m *Eksctl) Delete(ctx context.Context, flags ...string) (string, error) {
-	return m.Exec(ctx, append([]string{"delete", "cluster", "-f", "/cluster.yaml"}, flags...))
+func (m *Eksctl) Delete(ctx context.Context, flags Optional[[]string]) (string, error) {
+	return m.Exec(ctx, append([]string{"delete", "cluster", "-f", "/cluster.yaml"}, flags.GetOr([]string{})...))
 }
 
 // Kubeconfig returns the kubeconfig of the cluster. To download it using Dagger's
