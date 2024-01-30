@@ -46,7 +46,7 @@ func (m *Eksctl) DeleteCluster(ctx context.Context, flags ...string) (string, er
 
 // Kubeconfig returns the kubeconfig of the cluster. To download it using Dagger's
 // CLI you can call `dagger download`.
-func (m *Eksctl) Kubeconfig(ctx context.Context, cluster *File) *File {
+func (m *Eksctl) Kubeconfig(ctx context.Context) *File {
 	return m.Container.
 		WithExec([]string{"utils", "write-kubeconfig", "-f", "/cluster.yaml", "--kubeconfig", "/kubeconfig.yaml"}).
 		File("/kubeconfig.yaml")
