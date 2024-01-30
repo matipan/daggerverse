@@ -17,10 +17,13 @@ func New(version Optional[string], awsCreds *File, awsProfile string, cluster *F
 	}
 }
 
-// With allows you to modify the container to do things such as
-// mount additional config, credentials, cache volumes, etc.
-func (m *Eksctl) With(ctrFunc func(c *Container) *Container) *Eksctl {
-	m.Container = ctrFunc(m.Container)
+// WithContainer allows you to modify the container used to run eksctl.
+// You should always use the existing `eksctl.Container` and add things on
+// top of it. This is the unsafe alternative to something like accepting a
+// function as a parameter that modifies the existing container.
+// See https://github.com/dagger/dagger/issues/6213 for more details.
+func (m *Eksctl) WithContainer(ctr *Container) *Eksctl {
+	m.Container = ctr
 	return m
 }
 
@@ -32,32 +35,21 @@ func (m *Eksctl) Exec(ctx context.Context, command []string) (string, error) {
 // CreateCluster calls `eksctl create` with the cluster config. Additional
 // flags can be provided in `exec` form.
 func (m *Eksctl) CreateCluster(ctx context.Context, flags ...string) (string, error) {
-	cmd := append([]string{"create", "cluster", "-f", "cluster.yaml"}, flags...)
-	return m.Container.
-		WithWorkdir("/cluster").
-		WithFile("cluster.yaml", m.Cluster).
-		WithExec(cmd).
-		Stdout(ctx)
+	return m.Exec(ctx, append([]string{"create", "cluster", "-f", "/cluster.yaml"}, flags...))
 }
 
 // DeleteCluster calls `eksctl delete` on the cluster config. Additional
 // flags can be provided in `exec` form.
 func (m *Eksctl) DeleteCluster(ctx context.Context, flags ...string) (string, error) {
-	cmd := append([]string{"delete", "cluster", "-f", "cluster.yaml"}, flags...)
-	return m.Container.
-		WithWorkdir("/cluster").
-		WithFile("cluster.yaml", m.Cluster).
-		WithExec(cmd).
-		Stdout(ctx)
+	return m.Exec(ctx, append([]string{"delete", "cluster", "-f", "/cluster.yaml"}, flags...))
 }
 
 // Kubeconfig returns the kubeconfig of the cluster. To download it using Dagger's
 // CLI you can call `dagger download`.
 func (m *Eksctl) Kubeconfig(ctx context.Context, cluster *File) *File {
 	return m.Container.
-		WithFile("/cluster/cluster.yaml", cluster).
-		WithExec([]string{"utils", "write-kubeconfig", "-f", "/cluster/cluster.yaml", "--kubeconfig", "/cluster/kubeconfig.yaml"}).
-		File("/cluster/kubeconfig.yaml")
+		WithExec([]string{"utils", "write-kubeconfig", "-f", "/cluster.yaml", "--kubeconfig", "/kubeconfig.yaml"}).
+		File("/kubeconfig.yaml")
 }
 
 func eksctl(version string, awsCreds *File, awsProfile string, cluster *File) *Container {
