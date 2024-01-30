@@ -67,6 +67,8 @@ func eksctl(version string, awsCreds *File, awsProfile string, cluster *File) *C
 		WithExec([]string{"curl", "-sL", "-o", "eksctl.tar.gz", asset}).
 		WithExec([]string{"tar", "-xzf", "eksctl.tar.gz", "-C", "/bin"}).
 		WithExec([]string{"rm", "eksctl.tar.gz"}).
+		WithExec([]string{"curl", "-sL", "-o", "/bin/aws-iam-authenticator", "https://github.com/kubernetes-sigs/aws-iam-authenticator/releases/download/v0.6.14/aws-iam-authenticator_0.6.14_linux_amd64"}).
+		WithExec([]string{"chmod", "+x", "/bin/aws-iam-authenticator"}).
 		WithFile("/root/.aws/credentials", awsCreds).
 		WithEnvVariable("AWS_PROFILE", awsProfile).
 		WithFile("/cluster.yaml", cluster).
