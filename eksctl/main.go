@@ -53,11 +53,18 @@ func (m *Eksctl) Kubeconfig(ctx context.Context) *File {
 }
 
 func eksctl(version string, awsCreds *File, awsProfile string, cluster *File) *Container {
+	var asset string
+	if version == "latest" {
+		asset = "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_Linux_amd64.tar.gz"
+	} else {
+		asset = fmt.Sprintf("https://github.com/eksctl-io/eksctl/releases/download/%s/eksctl_Linux_amd64.tar.gz", version)
+	}
+
 	return dag.Container().
 		From("alpine:3.19").
 		WithExec([]string{"apk", "add", "--no-cache", "--update", "curl", "tar"}).
 		WithWorkdir("/").
-		WithExec([]string{"curl", "-sL", "-o", "eksctl.tar.gz", fmt.Sprintf("https://github.com/eksctl-io/eksctl/releases/%s/download/eksctl_Linux_amd64.tar.gz", version)}).
+		WithExec([]string{"curl", "-sL", "-o", "eksctl.tar.gz", asset}).
 		WithExec([]string{"tar", "-xzf", "eksctl.tar.gz", "-C", "/bin"}).
 		WithExec([]string{"rm", "eksctl.tar.gz"}).
 		WithFile("/root/.aws/credentials", awsCreds).
