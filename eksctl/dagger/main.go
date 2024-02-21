@@ -10,10 +10,16 @@ type Eksctl struct {
 	Container *Container
 }
 
-func New(version Optional[string], awsCreds *File, awsProfile string, cluster *File) *Eksctl {
+func New(
+	// +optional
+	// +default="latest"
+	version string,
+	awsCreds *File,
+	awsProfile string,
+	cluster *File) *Eksctl {
 	return &Eksctl{
 		Cluster:   cluster,
-		Container: eksctl(version.GetOr("latest"), awsCreds, awsProfile, cluster),
+		Container: eksctl(version, awsCreds, awsProfile, cluster),
 	}
 }
 
@@ -34,14 +40,16 @@ func (m *Eksctl) Exec(ctx context.Context, command []string) (string, error) {
 
 // Create calls `eksctl create` with the cluster config. Additional
 // flags can be provided in `exec` form.
-func (m *Eksctl) Create(ctx context.Context, flags Optional[[]string]) (string, error) {
-	return m.Exec(ctx, append([]string{"create", "cluster", "-f", "/cluster.yaml"}, flags.GetOr([]string{})...))
+// +optional flags
+func (m *Eksctl) Create(ctx context.Context, flags []string) (string, error) {
+	return m.Exec(ctx, append([]string{"create", "cluster", "-f", "/cluster.yaml"}, flags...))
 }
 
 // DeleteCluster calls `eksctl delete` on the cluster config. Additional
 // flags can be provided in `exec` form.
-func (m *Eksctl) Delete(ctx context.Context, flags Optional[[]string]) (string, error) {
-	return m.Exec(ctx, append([]string{"delete", "cluster", "-f", "/cluster.yaml"}, flags.GetOr([]string{})...))
+// +optional flags
+func (m *Eksctl) Delete(ctx context.Context, flags []string) (string, error) {
+	return m.Exec(ctx, append([]string{"delete", "cluster", "-f", "/cluster.yaml"}, flags...))
 }
 
 // Kubeconfig returns the kubeconfig of the cluster. To download it using Dagger's
