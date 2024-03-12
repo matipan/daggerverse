@@ -22,7 +22,7 @@ const YqVersion = "4.40.7"
 // - Use tools such as Flux or ArgoCD to automatically watch a registry and deploy new images when they appear
 // - Use Flux or ArgoCD as well but instead have them look for changes on specific manifests in a repository
 //
-// This module is useful for the last alternative. When you have CD tools and that are watching kubernetes manifests on your
+// This module is useful for the last alternative. When you have CD tools that are watching kubernetes manifests on your
 // repository you would need to change them explicitly. If you use Github or Gitlab there are actions that you can use to make
 // this changes (for example, there is a yq action and a git-auto-commit action), but the problem is that those workflows
 // cannot be tested locally and they become complicated. In the case of github actions, if you run your action as part of a
