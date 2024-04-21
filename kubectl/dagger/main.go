@@ -17,7 +17,7 @@ import (
 const (
 	KubectlVersion             = "v1.29.1"
 	AWSIamAuthenticatorVersion = "https://github.com/kubernetes-sigs/aws-iam-authenticator/releases/download/v0.6.14/aws-iam-authenticator_0.6.14_linux_amd64"
-	AlpineVersion              = "3.19"
+	BaseContainerImage         = "debian:trixie-slim"
 )
 
 type Kubectl struct {
@@ -65,8 +65,10 @@ func (m *Kubectl) KubectlEks(ctx context.Context,
 ) *KubectlCLI {
 	kubectl := fmt.Sprintf("https://dl.k8s.io/release/%s/bin/linux/amd64/kubectl", KubectlVersion)
 	c := dag.Container().
-		From("alpine:"+AlpineVersion).
-		WithExec([]string{"apk", "add", "--no-cache", "--update", "ca-certificates", "curl"}).
+		From(BaseContainerImage).
+		// WithExec([]string{"apk", "add", "--no-cache", "--update", "ca-certificates", "curl"}).
+		WithExec([]string{"apt", "update"}).
+		WithExec([]string{"apt", "install", "-y", "curl", "gettext-base"}).
 		WithExec([]string{"curl", "-sL", "-o", "/bin/kubectl", kubectl}).
 		WithExec([]string{"chmod", "+x", "/bin/kubectl"}).
 		WithExec([]string{"curl", "-sL", "-o", "/bin/aws-iam-authenticator", AWSIamAuthenticatorVersion}).
