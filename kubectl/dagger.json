@@ -1,0 +1,6 @@
+{
+  "name": "kubectl",
+  "sdk": "go",
+  "source": "dagger",
+  "engineVersion": "v0.11.1"
+}
