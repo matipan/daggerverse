@@ -2,5 +2,5 @@
   "name": "eksctl",
   "sdk": "go",
   "source": "dagger",
-  "engineVersion": "v0.9.11"
+  "engineVersion": "v0.11.1"
 }
