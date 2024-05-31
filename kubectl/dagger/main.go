@@ -21,13 +21,13 @@ const (
 )
 
 type Kubectl struct {
-	Kubeconfig *File
+	Kubeconfig *Secret
 }
 
 // New creates a new instance of the Kubectl module with an already configured
 // kubeconfig file. Kubectl is the top level module that provides functions setting
 // up the authentication for a specific k8s setup.
-func New(kubeconfig *File) *Kubectl {
+func New(kubeconfig *Secret) *Kubectl {
 	return &Kubectl{
 		Kubeconfig: kubeconfig,
 	}
@@ -59,8 +59,8 @@ func (k *KubectlCLI) DebugSh() *Container {
 // configured to communicate with an EKS cluster.
 func (m *Kubectl) KubectlEks(ctx context.Context,
 	// +optional
-	awsConfig *File,
-	awsCreds *File,
+	awsConfig *Secret,
+	awsCreds *Secret,
 	awsProfile string,
 ) *KubectlCLI {
 	kubectl := fmt.Sprintf("https://dl.k8s.io/release/%s/bin/linux/amd64/kubectl", KubectlVersion)
@@ -73,10 +73,10 @@ func (m *Kubectl) KubectlEks(ctx context.Context,
 		WithExec([]string{"chmod", "+x", "/bin/kubectl"}).
 		WithExec([]string{"curl", "-sL", "-o", "/bin/aws-iam-authenticator", AWSIamAuthenticatorVersion}).
 		WithExec([]string{"chmod", "+x", "/bin/aws-iam-authenticator"}).
-		WithFile("/root/.kube/config", m.Kubeconfig).
-		WithFile("/root/.aws/credentials", awsCreds)
+		WithMountedSecret("/root/.kube/config", m.Kubeconfig).
+		WithMountedSecret("/root/.aws/credentials", awsCreds)
 	if awsConfig != nil {
-		c = c.WithFile("/root/.aws/config", awsConfig)
+		c = c.WithMountedSecret("/root/.aws/config", awsConfig)
 	}
 	return &KubectlCLI{
 		Container: c.
