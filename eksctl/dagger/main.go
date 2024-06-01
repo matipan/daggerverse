@@ -16,10 +16,12 @@ func New(
 	version string,
 	awsCreds *Secret,
 	awsProfile string,
+	// +optional
+	awsConfig *File,
 	cluster *File) *Eksctl {
 	return &Eksctl{
 		Cluster:   cluster,
-		Container: eksctl(version, awsCreds, awsProfile, cluster),
+		Container: eksctl(version, awsCreds, awsProfile, awsConfig, cluster),
 	}
 }
 
@@ -62,7 +64,7 @@ func (m *Eksctl) Kubeconfig(ctx context.Context) *File {
 		File("/kubeconfig.yaml")
 }
 
-func eksctl(version string, awsCreds *Secret, awsProfile string, cluster *File) *Container {
+func eksctl(version string, awsCreds *Secret, awsProfile string, awsConfig *File, cluster *File) *Container {
 	var asset string
 	if version == "latest" {
 		asset = "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_Linux_amd64.tar.gz"
@@ -80,6 +82,12 @@ func eksctl(version string, awsCreds *Secret, awsProfile string, cluster *File) 
 		WithExec([]string{"curl", "-sL", "-o", "/bin/aws-iam-authenticator", "https://github.com/kubernetes-sigs/aws-iam-authenticator/releases/download/v0.6.14/aws-iam-authenticator_0.6.14_linux_amd64"}).
 		WithExec([]string{"chmod", "+x", "/bin/aws-iam-authenticator"}).
 		WithMountedSecret("/root/.aws/credentials", awsCreds).
+		With(func(c *Container) *Container {
+			if awsConfig != nil {
+				return c.WithFile("/root/.aws/config", awsConfig)
+			}
+			return c
+		}).
 		WithEnvVariable("AWS_PROFILE", awsProfile).
 		WithFile("/cluster.yaml", cluster).
 		WithEntrypoint([]string{"/bin/eksctl"})
