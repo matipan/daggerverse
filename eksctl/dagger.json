@@ -1,6 +1,5 @@
 {
   "name": "eksctl",
   "sdk": "go",
-  "source": "dagger",
-  "engineVersion": "v0.11.6"
+  "engineVersion": "v0.13.3"
 }
