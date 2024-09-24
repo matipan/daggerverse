@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"main/internal/dagger"
+	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
@@ -36,9 +38,44 @@ type ImageUpdater struct{}
 // NOTE: this pushes a commit to your repository so make sure that you either
 // don't have a cyclic workflow trigger or that you use a token that prevents
 // this from happening.
-// +optional forceWithLease
-func (m *ImageUpdater) Update(ctx context.Context, repo, branch, deployFilepath, imageUrl, gitUser, gitEmail string, gitPassword *Secret, forceWithLease bool) error {
+func (m *ImageUpdater) Update(ctx context.Context,
+	// name of the application that is being updated. appName is used on the commit message
+	// if no name is provided then a generic message is committed.
+	// +optional
+	appName string,
+	// repository to clone
+	repo string,
+	// branch to checkout
+	branch string,
+	// list of files that should be updated
+	files []string,
+	// full URL of the image to set
+	imageUrl string,
+	// username for the author of the commit
+	gitUser string,
+	// email used for both the commit and the authentication
+	gitEmail string,
+	// password to authenticate against git server.
+	gitPassword *dagger.Secret,
+	// if specified then the push is made with --force-with-lease
+	// +optional
+	forceWithLease bool,
+	// list of container IDs to update on each of the files
+	// +optional
+	containers []int,
+) error {
+	if len(containers) == 0 {
+		containers = []int{0}
+	}
+
 	githubPassword, err := gitPassword.Plaintext(ctx)
+	if err != nil {
+		return err
+	}
+
+	yqContainer, err := dag.Container().
+		From("mikefarah/yq:" + YqVersion).
+		Sync(ctx)
 	if err != nil {
 		return err
 	}
@@ -64,19 +101,26 @@ func (m *ImageUpdater) Update(ctx context.Context, repo, branch, deployFilepath,
 		return err
 	}
 
-	if err := m.updateFile(ctx, worktree, deployFilepath, imageUrl); err != nil {
+	if err := m.updateFiles(ctx, yqContainer, worktree, imageUrl, files, containers); err != nil {
 		return err
 	}
 
 	// Commit the changes of the deployment file and push them to the branch
-	if _, err := worktree.Add(deployFilepath); err != nil {
-		return err
+	for _, file := range files {
+		if _, err := worktree.Add(file); err != nil {
+			return err
+		}
 	}
 
-	if _, err := worktree.Commit(fmt.Sprintf("Updating deployment with image: %s", imageUrl), &git.CommitOptions{
+	msg := fmt.Sprintf("Updating resource with image: %s", imageUrl)
+	if appName != "" {
+		msg = fmt.Sprintf("Updating %s resource with image: %s", appName, imageUrl)
+	}
+	if _, err := worktree.Commit(msg, &git.CommitOptions{
 		Author: &object.Signature{
 			Name:  gitUser,
 			Email: gitEmail,
+			When:  time.Now(),
 		},
 	}); err != nil {
 		return err
@@ -97,42 +141,49 @@ func (m *ImageUpdater) Update(ctx context.Context, repo, branch, deployFilepath,
 	return repository.PushContext(ctx, pushOptions)
 }
 
-// updateFile opens the file at the specified filepath, edits the image spec setting
-// the new image URL that was specified and writes the file back to the worktree
-func (m *ImageUpdater) updateFile(ctx context.Context, worktree *git.Worktree, deployFilepath, imageUrl string) error {
-	file, err := worktree.Filesystem.Open(deployFilepath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
+// updateFiles opens each file at the specified filepath, edits the image spec setting
+// for each of the containers with the new image URL that was specified and writes
+// the file back to the worktree
+func (m *ImageUpdater) updateFiles(ctx context.Context, yq *dagger.Container, worktree *git.Worktree, imageUrl string, files []string, containers []int) error {
+	for _, filePath := range files {
+		file, err := worktree.Filesystem.Open(filePath)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
 
-	deployment, err := io.ReadAll(file)
-	if err != nil {
-		return err
+		deployment, err := io.ReadAll(file)
+		if err != nil {
+			return err
+		}
+
+		updated, err := yq.
+			WithNewFile("deployment.yaml", string(deployment), dagger.ContainerWithNewFileOpts{
+				Permissions: 0o666,
+			}).
+			WithoutEntrypoint().
+			With(func(c *dagger.Container) *dagger.Container {
+				for _, cid := range containers {
+					c = c.WithExec([]string{"sh", "-c", fmt.Sprintf("yq -i '.spec.template.spec.containers[%d].image = \"%s\"' deployment.yaml", cid, imageUrl)})
+				}
+				return c
+			}).
+			File("deployment.yaml").
+			Contents(ctx)
+		if err != nil {
+			return err
+		}
+
+		f, err := worktree.Filesystem.Create(filePath)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		if _, err := f.Write([]byte(updated)); err != nil {
+			return err
+		}
 	}
 
-	updated, err := dag.Container().
-		From("mikefarah/yq:"+YqVersion).
-		WithNewFile("deployment.yaml", ContainerWithNewFileOpts{
-			Contents:    string(deployment),
-			Permissions: 0o666,
-		}).
-		WithoutEntrypoint().
-		WithExec([]string{"sh", "-c", "yq -i '.spec.template.spec.containers[0].image = \"" + imageUrl + "\"' deployment.yaml"}).
-		File("deployment.yaml").
-		Contents(ctx)
-	if err != nil {
-		return err
-	}
-
-	f, err := worktree.Filesystem.Create(deployFilepath)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	if _, err := f.Write([]byte(updated)); err != nil {
-		return err
-	}
 	return nil
 }

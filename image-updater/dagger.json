@@ -2,5 +2,5 @@
   "name": "image-updater",
   "sdk": "go",
   "source": "dagger",
-  "engineVersion": "v0.9.10"
+  "engineVersion": "v0.13.3"
 }
