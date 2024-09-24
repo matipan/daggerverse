@@ -15,13 +15,13 @@ type Pulumi struct {
 	// +private
 	AwsSecretKey *dagger.Secret
 	// +private
-	PulumiToken  *dagger.Secret
+	PulumiToken *dagger.Secret
 	// The Pulumi ESC environment used for AWS OIDC
-	EscEnv       string
+	EscEnv string
 	// The version of the Pulumi base image
-	Version      string
+	Version string
 	// Whether a Docker Engine will be bound to the Pulumi container
-	Docker       bool
+	Docker bool
 }
 
 // Optional function to specify the version of Pulumi's docker image to use as base
@@ -86,7 +86,7 @@ func (m *Pulumi) Run(ctx context.Context, src *dagger.Directory, command string)
 }
 
 // Gets the output value from the stack.
-func (m *Pulumi) Output(ctx context.Context, src *dagger.Directory,  property string, stack string) (string, error) {
+func (m *Pulumi) Output(ctx context.Context, src *dagger.Directory, property string, stack string) (string, error) {
 	selectCmd := fmt.Sprintf("pulumi stack select %s", stack)
 	outputCmd := fmt.Sprintf("pulumi stack output %s", property)
 	return m.commandOutput(ctx, src, fmt.Sprintf("%s && %s", selectCmd, outputCmd))
