@@ -4,13 +4,12 @@
 // is done against the cluster. Eventually this module should support all most
 // used methods.
 // Each top level method is in charge of creating a container with all the tools
-// and credentials ready to go for kubectl commands to be executed.
-// For an example on how this is implemented you can check out the `KubectlEks`
-// method.
+// and credentials ready to go for kubectl commands to be executed. For an example on how this is implemented you can check out the `KubectlEks` method.
 package main
 
 import (
 	"context"
+	"dagger/kubectl/internal/dagger"
 	"fmt"
 )
 
@@ -21,13 +20,13 @@ const (
 )
 
 type Kubectl struct {
-	Kubeconfig *Secret
+	Kubeconfig *dagger.Secret
 }
 
 // New creates a new instance of the Kubectl module with an already configured
 // kubeconfig file. Kubectl is the top level module that provides functions setting
 // up the authentication for a specific k8s setup.
-func New(kubeconfig *Secret) *Kubectl {
+func New(kubeconfig *dagger.Secret) *Kubectl {
 	return &Kubectl{
 		Kubeconfig: kubeconfig,
 	}
@@ -36,7 +35,7 @@ func New(kubeconfig *Secret) *Kubectl {
 // KubectlCLI is a child module that holds a Container that should already
 // be configured to talk to a k8s cluster.
 type KubectlCLI struct {
-	Container *Container
+	Container *dagger.Container
 }
 
 // Exec runs the specified kubectl command.
@@ -51,7 +50,7 @@ func (k *KubectlCLI) Exec(ctx context.Context, cmd []string) (string, error) {
 // misconfigurations.
 // For example:
 // dagger call --kubeconfig kubeconfig.yaml kubectl-eks --aws-creds ~/.aws/credentials --aws-profile "example" --aws-config ~/.aws/config debug-sh terminal
-func (k *KubectlCLI) DebugSh() *Container {
+func (k *KubectlCLI) DebugSh() *dagger.Container {
 	return k.Container.WithoutEntrypoint()
 }
 
@@ -59,8 +58,8 @@ func (k *KubectlCLI) DebugSh() *Container {
 // configured to communicate with an EKS cluster.
 func (m *Kubectl) KubectlEks(ctx context.Context,
 	// +optional
-	awsConfig *Secret,
-	awsCreds *Secret,
+	awsConfig *dagger.Secret,
+	awsCreds *dagger.Secret,
 	awsProfile string,
 ) *KubectlCLI {
 	kubectl := fmt.Sprintf("https://dl.k8s.io/release/%s/bin/linux/amd64/kubectl", KubectlVersion)
