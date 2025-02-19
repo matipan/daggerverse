@@ -1,21 +1,3 @@
-package main
-
-import (
-	"context"
-	"fmt"
-	"io"
-	"main/internal/dagger"
-	"time"
-
-	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
-	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
-)
-
-const YqVersion = "4.40.7"
-
 // image-updater is a dagger module that updates, commits and pushes a kubernetes deployment file with a new image-url.
 //
 // There are many alternatives to doing GitOps with kubernetes now a days, to name a few:
@@ -31,6 +13,24 @@ const YqVersion = "4.40.7"
 // workflow that takes a long time to run, it might happen that a new commit showed up and your push will fail. Solving this
 // is possible, but it requires adding even more untestable bash. This is why this module exists. With image-updater you can
 // implement this logic in a single step that is reproducible locally.
+package main
+
+import (
+	"context"
+	"dagger/image-updater/internal/dagger"
+	"fmt"
+	"io"
+	"time"
+
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
+)
+
+const YqVersion = "4.40.7"
+
 type ImageUpdater struct{}
 
 // Update updates the kubernetes deployment file in the specified repository
