@@ -1,12 +1,14 @@
 {
   "name": "pulumi",
-  "sdk": "go",
+  "engineVersion": "v0.16.1",
+  "sdk": {
+    "source": "go"
+  },
   "dependencies": [
     {
       "name": "docker",
-      "source": "github.com/shykes/daggerverse/docker@c9a80c9eac0675a53a7e052da3594207f4235988"
+      "source": "github.com/shykes/daggerverse/docker@c9a80c9eac0675a53a7e052da3594207f4235988",
+      "pin": "c9a80c9eac0675a53a7e052da3594207f4235988"
     }
-  ],
-  "source": ".",
-  "engineVersion": "v0.13.3"
+  ]
 }
