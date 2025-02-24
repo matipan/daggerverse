@@ -1,5 +1,7 @@
 {
   "name": "kubectl",
-  "sdk": "go",
-  "engineVersion": "v0.13.3"
+  "engineVersion": "v0.16.1",
+  "sdk": {
+    "source": "go"
+  }
 }
