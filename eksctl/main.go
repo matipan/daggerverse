@@ -29,7 +29,6 @@ func New(
 	// +optional
 	// +default="latest"
 	version string,
-	// +default="~/.aws/credentials"
 	awsCreds *dagger.Secret,
 	awsProfile string,
 	// +optional
