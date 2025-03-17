@@ -53,7 +53,7 @@ func (m *Eksctl) WithContainer(ctr *dagger.Container) *Eksctl {
 
 // Exec executes the eksctl command.
 func (m *Eksctl) Exec(ctx context.Context, command []string) (string, error) {
-	return m.Container.WithExec(command).Stdout(ctx)
+	return m.Container.WithExec(command, dagger.ContainerWithExecOpts{UseEntrypoint: true}).Stdout(ctx)
 }
 
 // Create calls `eksctl create` with the cluster config. Additional
