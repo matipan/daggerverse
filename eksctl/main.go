@@ -29,11 +29,13 @@ func New(
 	// +optional
 	// +default="latest"
 	version string,
+	// +default="~/.aws/credentials"
 	awsCreds *dagger.Secret,
 	awsProfile string,
 	// +optional
 	awsConfig *dagger.File,
-	cluster *dagger.File) *Eksctl {
+	cluster *dagger.File,
+) *Eksctl {
 	return &Eksctl{
 		Cluster:   cluster,
 		Container: eksctl(version, awsCreds, awsProfile, awsConfig, cluster),
