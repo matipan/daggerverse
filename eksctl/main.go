@@ -76,7 +76,10 @@ func (m *Eksctl) Delete(ctx context.Context,
 // CLI you can call `dagger download`.
 func (m *Eksctl) Kubeconfig(ctx context.Context) *dagger.File {
 	return m.Container.
-		WithExec([]string{"utils", "write-kubeconfig", "-f", "/cluster.yaml", "--kubeconfig", "/kubeconfig.yaml"}).
+		WithExec(
+			[]string{"utils", "write-kubeconfig", "-f", "/cluster.yaml", "--kubeconfig", "/kubeconfig.yaml"},
+			dagger.ContainerWithExecOpts{UseEntrypoint: true},
+		).
 		File("/kubeconfig.yaml")
 }
 
