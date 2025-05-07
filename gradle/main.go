@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"main/internal/dagger"
 )
 
 const DefaultGradleVersion = "latest"
@@ -9,13 +10,13 @@ const DefaultGradleVersion = "latest"
 type Gradle struct {
 	Version   string
 	Image     string
-	Directory *Directory
+	Directory *dagger.Directory
 	Wrapper   bool
 }
 
 // WithDirectory mounts the directory of the application that will be potentially
 // built.
-func (g *Gradle) WithDirectory(src *Directory) *Gradle {
+func (g *Gradle) WithDirectory(src *dagger.Directory) *Gradle {
 	g.Directory = src
 	return g
 }
@@ -46,28 +47,28 @@ func (g *Gradle) FromImage(image string) *Gradle {
 // Container returns a container with gradle, caching and directories mounted
 // and ready to be used. You can use this if for any reason the available functions
 // are not enough.
-func (g *Gradle) Container() *Container {
+func (g *Gradle) Container() *dagger.Container {
 	return g.buildContainer()
 }
 
 // Build runs a clean build.
-func (g *Gradle) Build() *Container {
+func (g *Gradle) Build() *dagger.Container {
 	return g.buildContainer().WithExec([]string{"clean", "build", "--no-daemon"})
 }
 
 // Test runs a clean test.
-func (g *Gradle) Test() *Container {
+func (g *Gradle) Test() *dagger.Container {
 	return g.buildContainer().WithExec([]string{"clean", "test", "--no-daemon"})
 }
 
 // Task allows you to run any custom gradle task you would like.
-func (g *Gradle) Task(task string, args ...string) *Container {
+func (g *Gradle) Task(task string, args ...string) *dagger.Container {
 	return g.buildContainer().WithExec(append([]string{task}, args...))
 }
 
 // buildContainer builds a gradle container with the specified version or
 // image and the directory that was mounted.
-func (g *Gradle) buildContainer() *Container {
+func (g *Gradle) buildContainer() *dagger.Container {
 	image := g.Image
 	if image == "" {
 		version := g.Version
