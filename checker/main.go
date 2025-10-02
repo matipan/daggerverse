@@ -54,3 +54,10 @@ func (m *Checker) CheckNoArgs(ctx context.Context) (string, error) {
 		WithExec([]string{"echo", "hello"}).
 		Stdout(ctx)
 }
+
+func (m *Checker) HelloDagger(ctx context.Context) (string, error) {
+	return dag.Container().
+		From("alpine:latest").
+		WithExec([]string{"echo", "Hello, Dagger!"}).
+		Stdout(ctx)
+}
