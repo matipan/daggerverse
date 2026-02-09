@@ -1,7 +1,8 @@
 {
   "name": "eksctl",
-  "engineVersion": "v0.18.7",
+  "engineVersion": "v0.21.0-20260417213410-dev-6e6a18036e4e",
   "sdk": {
     "source": "go"
-  }
+  },
+  "disableDefaultFunctionCaching": true
 }
